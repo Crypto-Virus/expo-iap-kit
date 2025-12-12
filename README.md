@@ -5,7 +5,7 @@ Plug-and-play IAP subscriptions for Expo apps. iOS focused.
 ## Installation
 
 ```bash
-npm install github:YOUR_USERNAME/expo-iap-kit
+npm install github:Crypto-Virus/expo-iap-kit
 ```
 
 ## Peer Dependencies
