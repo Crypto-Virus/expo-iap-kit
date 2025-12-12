@@ -11,7 +11,7 @@ npm install github:Crypto-Virus/expo-iap-kit
 ## Peer Dependencies
 
 ```bash
-npm install expo-iap zustand @react-native-async-storage/async-storage
+npx expo install expo-iap zustand @react-native-async-storage/async-storage
 ```
 
 ## Usage
