@@ -166,26 +166,19 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
     onPurchaseError: handlePurchaseError,
   });
 
-  // Exposed finishTransaction for deferred finishing
+  // Assign synchronously so the ref is available before any replayed StoreKit events fire
+  finishTransactionRef.current = finishTransaction;
+
+  // Exposed finishTransaction for deferred finishing — errors propagate to the caller
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const exposedFinishTransaction = useCallback(
     async (purchase: any) => {
       if (!finishTransactionRef.current) return;
       if (!purchase.transactionId || purchase.transactionId === '0') return;
-      try {
-        await finishTransactionRef.current({ purchase, isConsumable: false });
-      } catch (err) {
-        console.error('Failed to finish transaction:', err);
-      }
+      await finishTransactionRef.current({ purchase, isConsumable: false });
     },
     []
   );
-
-  // Store finishTransaction in ref so callbacks can access it
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    finishTransactionRef.current = finishTransaction;
-  }, [finishTransaction]);
 
   // Fetch subscription products when connected
   // eslint-disable-next-line react-hooks/rules-of-hooks
