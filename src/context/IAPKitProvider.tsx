@@ -9,6 +9,7 @@ export interface IAPKitProviderProps extends UseIAPSetupConfig {
 export function IAPKitProvider({
   children,
   productIds,
+  deferFinish,
   onPurchaseSuccess,
   onPurchaseError,
   onRestoreSuccess,
@@ -16,8 +17,9 @@ export function IAPKitProvider({
   onNoSubscriptionFound,
   onSubscriptionExpired,
 }: IAPKitProviderProps) {
-  const { connected, restorePurchases, requestPurchase } = useIAPSetup({
+  const { connected, restorePurchases, requestPurchase, finishTransaction } = useIAPSetup({
     productIds,
+    deferFinish,
     onPurchaseSuccess,
     onPurchaseError,
     onRestoreSuccess,
@@ -27,7 +29,7 @@ export function IAPKitProvider({
   });
 
   return (
-    <IAPContext.Provider value={{ connected, restorePurchases, requestPurchase }}>
+    <IAPContext.Provider value={{ connected, restorePurchases, requestPurchase, finishTransaction }}>
       {children}
     </IAPContext.Provider>
   );

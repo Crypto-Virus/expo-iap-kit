@@ -10,9 +10,10 @@ const expoIap = isExpoGo ? null : require('expo-iap');
 
 export interface UseIAPSetupConfig {
   productIds: string[];
+  deferFinish?: boolean;
   onPurchaseSuccess?: (purchase: any) => void;
   onPurchaseError?: (error: { code?: string; message?: string }) => void;
-  onRestoreSuccess?: () => void;
+  onRestoreSuccess?: (purchases: any[]) => void;
   onRestoreError?: () => void;
   onNoSubscriptionFound?: () => void;
   onSubscriptionExpired?: () => void;
@@ -23,12 +24,14 @@ export interface UseIAPSetupReturn {
   products: any[];
   restorePurchases: () => Promise<void>;
   requestPurchase: ((options: any) => Promise<any>) | null;
+  finishTransaction: (purchase: any) => Promise<void>;
   isSubscribed: boolean;
 }
 
 export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
   const {
     productIds,
+    deferFinish = false,
     onPurchaseSuccess,
     onPurchaseError,
     onRestoreSuccess,
@@ -56,6 +59,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
         onRestoreError?.();
       },
       requestPurchase: null,
+      finishTransaction: async () => {},
       isSubscribed,
     };
   }
@@ -120,13 +124,15 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
 
       setCurrentPurchase(purchase);
       setSubscribed(true, expiresAt);
-      await finishTx(purchase);
+      if (!deferFinish) {
+        await finishTx(purchase);
+      }
       setLoading(false);
 
       // Call app-specific success handler
       onPurchaseSuccess?.(purchase);
     },
-    [setCurrentPurchase, setSubscribed, setLoading, onPurchaseSuccess]
+    [setCurrentPurchase, setSubscribed, setLoading, onPurchaseSuccess, deferFinish]
   );
 
   const handlePurchaseError = useCallback(
@@ -159,6 +165,21 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
     onPurchaseSuccess: handlePurchaseSuccess,
     onPurchaseError: handlePurchaseError,
   });
+
+  // Exposed finishTransaction for deferred finishing
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const exposedFinishTransaction = useCallback(
+    async (purchase: any) => {
+      if (!finishTransactionRef.current) return;
+      if (!purchase.transactionId || purchase.transactionId === '0') return;
+      try {
+        await finishTransactionRef.current({ purchase, isConsumable: false });
+      } catch (err) {
+        console.error('Failed to finish transaction:', err);
+      }
+    },
+    []
+  );
 
   // Store finishTransaction in ref so callbacks can access it
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -235,7 +256,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
       const sub = activeSubscriptions[0];
       const expiresAt = Platform.OS === 'ios' ? sub.expirationDateIOS : null;
       setSubscribed(true, expiresAt);
-      onRestoreSuccess?.();
+      onRestoreSuccess?.(activeSubscriptions);
       isRestoringRef.current = false;
       setLoading(false);
       return;
@@ -254,7 +275,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
 
         if (isActive) {
           setSubscribed(true, subscription.expirationDateIOS);
-          onRestoreSuccess?.();
+          onRestoreSuccess?.([subscription]);
         } else {
           setSubscribed(false);
           onSubscriptionExpired?.();
@@ -323,6 +344,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
     products: subscriptions || [],
     restorePurchases,
     requestPurchase,
+    finishTransaction: exposedFinishTransaction,
     isSubscribed,
   };
 }
