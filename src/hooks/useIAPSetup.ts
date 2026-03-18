@@ -104,6 +104,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
         } else {
           await finishTx(purchase);
           setLoading(false);
+          onPurchaseError?.({ code: 'expired-transaction', message: 'Purchase has no expiration date' });
           return;
         }
       } else if (Platform.OS === 'android') {
@@ -113,6 +114,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
       if (!isActive) {
         await finishTx(purchase);
         setLoading(false);
+        onPurchaseError?.({ code: 'expired-transaction', message: 'Purchase is expired' });
         return;
       }
 
@@ -126,7 +128,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
       // Call app-specific success handler
       onPurchaseSuccess?.(purchase, exposedFinishTransaction);
     },
-    [setCurrentPurchase, setSubscribed, setLoading, onPurchaseSuccess, deferFinish]
+    [setCurrentPurchase, setSubscribed, setLoading, onPurchaseSuccess, onPurchaseError, deferFinish]
   );
 
   const handlePurchaseError = useCallback(
@@ -134,6 +136,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
       setLoading(false);
 
       if (error.code === ErrorCode.UserCancelled || error.code === 'user-cancelled') {
+        onPurchaseError?.({ code: 'user-cancelled', message: error.message });
         return;
       }
 
