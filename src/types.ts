@@ -3,7 +3,7 @@ import type { ProductSubscription, Purchase } from 'expo-iap';
 export interface IAPKitConfig {
   productIds: string[];
   deferFinish?: boolean;
-  onPurchaseSuccess?: (purchase: Purchase) => void;
+  onPurchaseSuccess?: (purchase: Purchase, finishTransaction: (purchase: Purchase) => Promise<void>) => void | Promise<void>;
   onPurchaseError?: (error: { code?: string; message?: string }) => void;
   onRestoreSuccess?: (purchases: Purchase[]) => void;
   onRestoreError?: () => void;

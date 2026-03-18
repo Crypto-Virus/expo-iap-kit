@@ -11,7 +11,7 @@ const expoIap = isExpoGo ? null : require('expo-iap');
 export interface UseIAPSetupConfig {
   productIds: string[];
   deferFinish?: boolean;
-  onPurchaseSuccess?: (purchase: any) => void;
+  onPurchaseSuccess?: (purchase: any, finishTransaction: (purchase: any) => Promise<void>) => void | Promise<void>;
   onPurchaseError?: (error: { code?: string; message?: string }) => void;
   onRestoreSuccess?: (purchases: any[]) => void;
   onRestoreError?: () => void;
@@ -116,12 +116,6 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
         return;
       }
 
-      if (useSubscription.getState().isSubscribed) {
-        await finishTx(purchase);
-        setLoading(false);
-        return;
-      }
-
       setCurrentPurchase(purchase);
       setSubscribed(true, expiresAt);
       if (!deferFinish) {
@@ -130,7 +124,7 @@ export function useIAPSetup(config: UseIAPSetupConfig): UseIAPSetupReturn {
       setLoading(false);
 
       // Call app-specific success handler
-      onPurchaseSuccess?.(purchase);
+      onPurchaseSuccess?.(purchase, exposedFinishTransaction);
     },
     [setCurrentPurchase, setSubscribed, setLoading, onPurchaseSuccess, deferFinish]
   );
